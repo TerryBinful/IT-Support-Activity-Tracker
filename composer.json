@@ -1,0 +1,43 @@
+{
+  "name": "local/it-activity-tracker",
+  "type": "project",
+  "description": "Docker-first IT Activity Tracker",
+  "require": {
+    "php": "^8.3",
+    "laravel/framework": "^13.0",
+    "laravel/tinker": "^3.0",
+    "livewire/livewire": "^4.0",
+    "maatwebsite/excel": "^4.0",
+    "barryvdh/laravel-dompdf": "^3.1"
+  },
+  "require-dev": {
+    "fakerphp/faker": "^1.24",
+    "laravel/pail": "^1.2",
+    "laravel/pint": "^1.24",
+    "pestphp/pest": "^4.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/",
+      "Database\\Factories\\": "database/factories/",
+      "Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": { "Tests\\": "tests/" }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+      "@php artisan package:discover --ansi"
+    ]
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "allow-plugins": { "pestphp/pest-plugin": true }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

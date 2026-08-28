@@ -1,0 +1,4 @@
+<?php
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+class DashboardController extends Controller{public function index(Request $r){$u=$r->user();$today=$u->activities()->with('category')->whereDate('activity_date',now()->toDateString())->latest('created_at')->get();$month=$u->activities()->whereBetween('activity_date',[now()->startOfMonth()->toDateString(),now()->endOfMonth()->toDateString()]);$stats=['today'=>$today->count(),'month'=>(clone $month)->count(),'completed'=>(clone $month)->where('status','completed')->count(),'open'=>(clone $month)->whereIn('status',['in_progress','pending','on_hold'])->count()];$reminder=$u->reportReminders()->whereDate('report_month',now()->startOfMonth())->whereNull('acknowledged_at')->latest()->first();return view('dashboard',compact('today','stats','reminder'));}}

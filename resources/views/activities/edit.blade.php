@@ -1,0 +1,2 @@
+@extends('layouts.app')
+@section('content')<div class="mb-6"><h1 class="text-3xl font-bold">Edit Activity</h1></div><form method="POST" action="{{ route('activities.update',$activity) }}" class="rounded-xl border bg-white p-6">@csrf @method('PUT') @include('activities.form')<div class="mt-6 flex justify-end gap-3"><a class="btn-secondary" href="{{ route('activities.index') }}">Cancel</a><button class="btn">Save changes</button></div></form>@endsection

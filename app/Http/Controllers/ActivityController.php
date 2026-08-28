@@ -1,0 +1,13 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\Activity;use App\Models\Category;use Illuminate\Http\Request;
+class ActivityController extends Controller{
+ public function index(Request $r){$q=$r->user()->activities()->with('category')->latest('activity_date')->latest('created_at');if($r->filled('q'))$q->where(fn($x)=>$x->where('title','ilike','%'.$r->q.'%')->orWhere('description','ilike','%'.$r->q.'%'));if($r->filled('status'))$q->where('status',$r->status);if($r->filled('category'))$q->where('category_id',$r->category);if($r->filled('date'))$q->whereDate('activity_date',$r->date);$activities=$q->paginate(20)->withQueryString();$categories=Category::where('is_active',true)->orderBy('sort_order')->get();return view('activities.index',compact('activities','categories'));}
+ public function create(){$categories=Category::where('is_active',true)->orderBy('sort_order')->get();return view('activities.create',compact('categories'));}
+ public function store(Request $r){$d=$this->validated($r);$d['user_id']=$r->user()->id;$this->duration($d);Activity::create($d);return redirect()->route('activities.index')->with('success','Activity saved.');}
+ public function edit(Request $r,Activity $activity){abort_unless($activity->user_id===$r->user()->id,403);$categories=Category::where('is_active',true)->orderBy('sort_order')->get();return view('activities.edit',compact('activity','categories'));}
+ public function update(Request $r,Activity $activity){abort_unless($activity->user_id===$r->user()->id,403);$d=$this->validated($r);$this->duration($d);$activity->update($d);return redirect()->route('activities.index')->with('success','Activity updated.');}
+ public function destroy(Request $r,Activity $activity){abort_unless($activity->user_id===$r->user()->id,403);$activity->delete();return back()->with('success','Activity deleted.');}
+ private function duration(array &$d):void{if(!empty($d['started_at'])&&!empty($d['completed_at']))$d['duration_minutes']=max(0,(int)round((strtotime($d['completed_at'])-strtotime($d['started_at']))/60));}
+ private function validated(Request $r):array{return $r->validate(['title'=>'required|string|max:255','description'=>'nullable|string','category_id'=>'nullable|exists:categories,id','priority'=>'required|in:low,medium,high,critical','status'=>'required|in:completed,in_progress,pending,on_hold,cancelled','activity_date'=>'required|date','started_at'=>'nullable|date','completed_at'=>'nullable|date|after_or_equal:started_at','outcome'=>'nullable|string','blockers'=>'nullable|string','follow_up_required'=>'nullable|boolean','follow_up_action'=>'nullable|string','reference_number'=>'nullable|string|max:255','evidence_url'=>'nullable|url|max:2048']);}
+}

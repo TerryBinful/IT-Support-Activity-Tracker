@@ -1,138 +1,51 @@
 services:
-  bootstrap:
-    image: composer:2
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-      - composer_cache:/tmp
-    environment:
-      COMPOSER_ALLOW_SUPERUSER: '1'
-    command: >
-      sh -lc '
-        if [ ! -f artisan ]; then
-          echo "Initializing Laravel Livewire starter kit...";
-          composer create-project laravel/livewire-starter-kit . --no-interaction;
-        fi;
-        if [ ! -f .env ]; then cp .env.example .env; fi;
-        php artisan key:generate --force;
-      '
-    restart: "no"
-
   app:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: 'true'
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: it_activity
-      DB_USERNAME: it_activity
-      DB_PASSWORD: it_activity
-    depends_on:
-      bootstrap:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-    command: >
-      sh -lc '
-        php artisan migrate --force;
-        php artisan optimize:clear;
-        php-fpm -F
-      '
-
-  web:
-    image: nginx:1.29-alpine
+    container_name: it-activity-tracker-app
+    image: it-activity-tracker-app:latest
     ports:
       - "8080:80"
     volumes:
-      - ./src:/var/www/html:ro
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - laravel_storage:/var/www/html/storage
+      - laravel_config:/var/www/config
     depends_on:
-      - app
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
-  node:
-    image: node:22-alpine
-    working_dir: /var/www/html
+  scheduler:
+    image: it-activity-tracker-app:latest
+    container_name: it-activity-tracker-scheduler
+    command: ["php", "artisan", "schedule:work"]
     volumes:
-      - ./src:/var/www/html
-      - node_modules:/var/www/html/node_modules
-    command: >
-      sh -lc '
-        npm install;
-        npm run dev -- --host 0.0.0.0
-      '
-    ports:
-      - "5173:5173"
+      - laravel_storage:/var/www/html/storage
+      - laravel_config:/var/www/config
     depends_on:
-      - bootstrap
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    restart: unless-stopped
 
   postgres:
     image: postgres:17-alpine
+    container_name: it-activity-tracker-postgres
     environment:
-      POSTGRES_DB: it_activity
-      POSTGRES_USER: it_activity
-      POSTGRES_PASSWORD: it_activity
+      POSTGRES_DB: ${DB_DATABASE:-it_activity}
+      POSTGRES_USER: ${DB_USERNAME:-it_activity}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-it_activity_change_me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U it_activity -d it_activity"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-it_activity} -d ${DB_DATABASE:-it_activity}"]
       interval: 5s
       timeout: 5s
       retries: 20
-
-  scheduler:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: 'true'
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: it_activity
-      DB_USERNAME: it_activity
-      DB_PASSWORD: it_activity
-    depends_on:
-      bootstrap:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-    command: php artisan schedule:work
-
-  worker:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: 'true'
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: it_activity
-      DB_USERNAME: it_activity
-      DB_PASSWORD: it_activity
-    depends_on:
-      bootstrap:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    restart: unless-stopped
 
 volumes:
   postgres_data:
-  node_modules:
-  composer_cache:
+  laravel_storage:
+  laravel_config:
