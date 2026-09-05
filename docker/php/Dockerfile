@@ -1,45 +1,20 @@
-# Build the Laravel application completely inside Docker.
-FROM composer:2 AS laravel-builder
-WORKDIR /build
-
-RUN composer create-project laravel/laravel:^13.0 laravel --no-interaction --prefer-dist
-
-# Replace the generated dependency manifest with the project's declared dependencies.
-COPY composer.json /build/laravel/composer.json
-WORKDIR /build/laravel
-RUN composer update --no-interaction --prefer-dist --optimize-autoloader
-
-# Overlay application-owned source files from the repository.
-COPY app/ /build/laravel/app/
-COPY database/migrations/ /build/custom-migrations/
-COPY database/seeders/ /build/custom-seeders/
-COPY resources/views/ /build/laravel/resources/views/
-COPY resources/css/ /build/laravel/resources/css/
-COPY resources/js/ /build/laravel/resources/js/
-COPY routes/ /build/laravel/routes/
-COPY bootstrap/app.php /build/laravel/bootstrap/app.php
-COPY .env.example /build/laravel/.env.example
-COPY package.json /build/laravel/package.json
-COPY vite.config.js /build/laravel/vite.config.js
-RUN cp /build/custom-migrations/*.php database/migrations/ 2>/dev/null || true \
-    && cp /build/custom-seeders/*.php database/seeders/ 2>/dev/null || true
-
-FROM node:22-alpine AS assets-builder
-WORKDIR /app
-COPY --from=laravel-builder /build/laravel/package.json ./package.json
-COPY --from=laravel-builder /build/laravel/vite.config.js ./vite.config.js
-COPY --from=laravel-builder /build/laravel/resources ./resources
-COPY --from=laravel-builder /build/laravel/public ./public
-RUN npm install --no-audit --no-fund && npm run build
-
+# Single-stage build: fewer base images, more reliable on Docker Desktop for Windows.
 FROM php:8.4-apache-bookworm
+
 WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libicu-dev libzip-dev libpq-dev libonig-dev libxml2-dev unzip git curl \
-    && docker-php-ext-install -j"$(nproc)" bcmath intl mbstring opcache pdo_pgsql pgsql zip \
+    ca-certificates curl gnupg unzip git \
+    libicu-dev libzip-dev libpq-dev libonig-dev libxml2-dev \
+    libfreetype6-dev libjpeg62-turbo-dev libpng-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" bcmath gd intl mbstring opcache pdo_pgsql pgsql zip \
     && a2enmod rewrite headers expires \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Serve Laravel's public directory directly from Apache.
 RUN sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
@@ -50,13 +25,42 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-availabl
     '</Directory>' > /etc/apache2/conf-available/laravel.conf \
     && a2enconf laravel
 
-COPY --from=laravel-builder /build/laravel /var/www/html
-COPY --from=assets-builder /app/public/build /var/www/html/public/build
+# Bootstrap Laravel inside the image, then overlay project-owned files.
+RUN composer create-project laravel/laravel:^13.0 /tmp/laravel --no-interaction --prefer-dist --no-security-blocking
+
+COPY composer.json /tmp/laravel/composer.json
+WORKDIR /tmp/laravel
+RUN composer update --no-interaction --prefer-dist --optimize-autoloader --no-security-blocking
+
+COPY app/ /tmp/laravel/app/
+COPY database/migrations/ /tmp/custom-migrations/
+COPY database/seeders/ /tmp/custom-seeders/
+COPY resources/views/ /tmp/laravel/resources/views/
+COPY resources/css/ /tmp/laravel/resources/css/
+COPY resources/js/ /tmp/laravel/resources/js/
+COPY routes/ /tmp/laravel/routes/
+COPY tests/ /tmp/laravel/tests/
+COPY bootstrap/app.php /tmp/laravel/bootstrap/app.php
+COPY .env.example /tmp/laravel/.env.example
+COPY package.json /tmp/laravel/package.json
+COPY vite.config.js /tmp/laravel/vite.config.js
+
+RUN cp /tmp/custom-migrations/*.php database/migrations/ 2>/dev/null || true \
+    && cp /tmp/custom-seeders/*.php database/seeders/ 2>/dev/null || true \
+    && npm install --no-audit --no-fund \
+    && npm run build \
+    && rm -rf /var/www/html/* \
+    && cp -a /tmp/laravel/. /var/www/html/ \
+    && rm -rf /tmp/laravel /tmp/custom-migrations /tmp/custom-seeders
+
+WORKDIR /var/www/html
+
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /var/www/html/storage/framework/cache /var/www/html/storage/framework/sessions /var/www/html/storage/framework/views /var/www/html/storage/logs \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 80
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

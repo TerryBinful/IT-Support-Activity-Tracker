@@ -1,10 +1,14 @@
+x-app-image: &app-image
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+  image: it-activity-tracker-app:latest
+  pull_policy: never
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
+    <<: *app-image
     container_name: it-activity-tracker-app
-    image: it-activity-tracker-app:latest
     ports:
       - "8080:80"
     volumes:
@@ -16,9 +20,23 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: it-activity-tracker-app:latest
+    <<: *app-image
     container_name: it-activity-tracker-scheduler
     command: ["php", "artisan", "schedule:work"]
+    volumes:
+      - laravel_storage:/var/www/html/storage
+      - laravel_config:/var/www/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    <<: *app-image
+    container_name: it-activity-tracker-worker
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3"]
     volumes:
       - laravel_storage:/var/www/html/storage
       - laravel_config:/var/www/config
@@ -32,6 +50,7 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: it-activity-tracker-postgres
+    pull_policy: if_not_present
     environment:
       POSTGRES_DB: ${DB_DATABASE:-it_activity}
       POSTGRES_USER: ${DB_USERNAME:-it_activity}

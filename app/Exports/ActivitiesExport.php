@@ -1,10 +1,63 @@
 <?php
+
 namespace App\Exports;
-use App\Models\User;use Maatwebsite\Excel\Concerns\FromCollection;use Maatwebsite\Excel\Concerns\WithHeadings;
-class ActivitiesExport implements FromCollection,WithHeadings{
- public function __construct(private User $user,private string $from,private string $to,private array $order){}
- public function collection(){return $this->user->activities()->with('category')->whereBetween('activity_date',[$this->from,$this->to])->orderBy('activity_date')->orderBy('created_at')->get()->map(fn($a)=>collect($this->order)->map(fn($c)=>$this->value($a,$c))->all());}
- public function headings():array{return collect($this->order)->map(fn($c)=>str($c)->replace('_',' ')->title()->toString())->all();}
- private function value($a,string $c):mixed{return match($c){'activity_date'=>$a->activity_date?->format('Y-m-d'),'created_at'=>$a->created_at?->format('Y-m-d H:i:s'),'category'=>$a->category?->name,'started_at'=>$a->started_at?->format('Y-m-d H:i:s'),'completed_at'=>$a->completed_at?->format('Y-m-d H:i:s'),'follow_up_required'=>$a->follow_up_required?'Yes':'No',default=>$a->{$c}};}
- public function toCsv():string{$h=fopen('php://temp','r+');fputcsv($h,$this->headings());foreach($this->collection() as $row)fputcsv($h,$row);rewind($h);$csv=stream_get_contents($h);fclose($h);return $csv;}
+
+use App\Models\User;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+
+class ActivitiesExport implements FromCollection, WithHeadings
+{
+    public function __construct(
+        private User $user,
+        private string $from,
+        private string $to,
+        private array $order,
+    ) {}
+
+    public function collection()
+    {
+        return $this->user->activities()
+            ->with('category')
+            ->whereBetween('activity_date', [$this->from, $this->to])
+            ->orderBy('activity_date')
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($activity) => collect($this->order)->map(fn ($column) => $this->value($activity, $column))->all());
+    }
+
+    public function headings(): array
+    {
+        return collect($this->order)->map(fn ($column) => str($column)->replace('_', ' ')->title()->toString())->all();
+    }
+
+    private function value($activity, string $column): mixed
+    {
+        return match ($column) {
+            'activity_date' => $activity->activity_date?->format('Y-m-d'),
+            'created_at' => $activity->created_at?->format('Y-m-d H:i:s'),
+            'category' => $activity->category?->name,
+            'started_at' => $activity->started_at?->format('Y-m-d H:i:s'),
+            'completed_at' => $activity->completed_at?->format('Y-m-d H:i:s'),
+            'follow_up_required' => $activity->follow_up_required ? 'Yes' : 'No',
+            'follow_up_due_at' => $activity->follow_up_due_at?->format('Y-m-d'),
+            default => $activity->{$column} ?? null,
+        };
+    }
+
+    public function toCsv(): string
+    {
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $this->headings());
+
+        foreach ($this->collection() as $row) {
+            fputcsv($handle, $row);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $csv;
+    }
 }

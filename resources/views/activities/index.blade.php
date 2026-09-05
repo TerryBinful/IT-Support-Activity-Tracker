@@ -1,2 +1,96 @@
 @extends('layouts.app')
-@section('content')<div class="flex items-end justify-between"><div><h1 class="text-3xl font-bold">Activities</h1><p class="mt-1 text-sm text-slate-500">Your private activity history.</p></div><a class="btn" href="{{ route('activities.create') }}">+ Add Activity</a></div><form class="mt-6 grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-5"><input class="input" name="q" placeholder="Search" value="{{ request('q') }}"><select class="input" name="category"><option value="">All categories</option>@foreach($categories as $c)<option value="{{ $c->id }}" @selected(request('category')==$c->id)>{{ $c->name }}</option>@endforeach</select><select class="input" name="status"><option value="">All statuses</option>@foreach(['completed','in_progress','pending','on_hold','cancelled'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ str($s)->replace('_',' ')->title() }}</option>@endforeach</select><input class="input" type="date" name="date" value="{{ request('date') }}"><button class="btn">Filter</button></form><div class="mt-6 overflow-hidden rounded-xl border bg-white"><div class="overflow-x-auto"><table class="min-w-full text-sm"><thead class="bg-slate-50 text-left"><tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Activity</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Priority</th><th class="px-4 py-3">Status</th><th class="px-4 py-3"></th></tr></thead><tbody class="divide-y">@forelse($activities as $a)<tr><td class="px-4 py-3">{{ $a->activity_date?->format('d M Y') }}</td><td class="px-4 py-3 font-medium">{{ $a->title }}</td><td class="px-4 py-3">{{ $a->category?->name ?? '—' }}</td><td class="px-4 py-3">{{ str($a->priority)->title() }}</td><td class="px-4 py-3">{{ str($a->status)->replace('_',' ')->title() }}</td><td class="px-4 py-3 text-right"><a class="mr-3 font-semibold" href="{{ route('activities.edit',$a) }}">Edit</a><form class="inline" method="POST" action="{{ route('activities.destroy',$a) }}">@csrf @method('DELETE')<button onclick="return confirm('Delete this activity?')" class="font-semibold text-red-600">Delete</button></form></td></tr>@empty<tr><td colspan="6" class="p-8 text-center text-slate-500">No activities match your filters.</td></tr>@endforelse</tbody></table></div><div class="p-4">{{ $activities->links() }}</div></div>@endsection
+
+@section('content')
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Activities</h1>
+            <p class="mt-1 text-sm text-slate-500">Search, filter, and manage your work log.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('activities.index', ['view' => 'today']) }}" class="btn-secondary">Today</a>
+            <a href="{{ route('activities.index', ['view' => 'active']) }}" class="btn-secondary">Active</a>
+            <a href="{{ route('activities.index', ['view' => 'follow-ups']) }}" class="btn-secondary">Follow-ups</a>
+            <a href="{{ route('activities.create') }}" class="btn">+ New Activity</a>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        @include('partials.quick_log', ['categories' => $categories])
+    </div>
+
+    <form method="GET" action="{{ route('activities.index') }}" class="mt-6 grid gap-4 rounded-xl border bg-white p-5 md:grid-cols-6">
+        <div class="md:col-span-2">
+            <label for="q" class="label">Search</label>
+            <input id="q" name="q" type="search" value="{{ request('q') }}" placeholder="Title, outcome, reference..." class="input">
+        </div>
+        <div>
+            <label for="status" class="label">Status</label>
+            <select id="status" name="status" class="input">
+                <option value="">All</option>
+                @foreach (['completed', 'in_progress', 'pending', 'on_hold', 'cancelled'] as $status)
+                    <option value="{{ $status }}" @selected(request('status') === $status)>{{ str($status)->replace('_', ' ')->title() }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label for="category" class="label">Category</label>
+            <select id="category" name="category" class="input">
+                <option value="">All</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>{{ $category->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label for="from" class="label">From</label>
+            <input id="from" name="from" type="date" value="{{ request('from') }}" class="input">
+        </div>
+        <div>
+            <label for="to" class="label">To</label>
+            <input id="to" name="to" type="date" value="{{ request('to') }}" class="input">
+        </div>
+        <div class="flex items-end gap-2 md:col-span-6">
+            <button type="submit" class="btn">Apply filters</button>
+            <a href="{{ route('activities.index') }}" class="btn-secondary">Clear</a>
+        </div>
+    </form>
+
+    <div class="mt-6 overflow-hidden rounded-xl border bg-white">
+        <div class="divide-y">
+            @forelse ($activities as $activity)
+                <div class="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex-1">
+                        <a href="{{ route('activities.show', $activity) }}" class="font-medium hover:underline">{{ $activity->title }}</a>
+                        <div class="mt-1 flex flex-wrap gap-2 text-sm text-slate-500">
+                            <span>{{ $activity->activity_date?->format('d M Y') }}</span>
+                            <span>{{ $activity->category?->name ?? 'Uncategorised' }}</span>
+                            <span>{{ str($activity->status)->replace('_', ' ')->title() }}</span>
+                            @if ($activity->duration_minutes)
+                                <span>{{ $activity->formattedDuration() }}</span>
+                            @endif
+                            @if ($activity->follow_up_required)
+                                <span class="rounded bg-amber-100 px-2 py-0.5 text-amber-900">Follow-up</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        @if ($activity->status === 'in_progress')
+                            <form method="POST" action="{{ route('activities.complete', $activity) }}">@csrf<button class="btn">Complete</button></form>
+                        @elseif (! in_array($activity->status, ['completed', 'cancelled']))
+                            <form method="POST" action="{{ route('activities.start', $activity) }}">@csrf<button class="btn-secondary">Start Task</button></form>
+                        @endif
+                        <a href="{{ route('activities.edit', $activity) }}" class="btn-secondary">Edit</a>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-slate-500">
+                    No activities found. Try changing your filters or create a new activity.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    @if ($activities->hasPages())
+        <div class="mt-6">{{ $activities->links() }}</div>
+    @endif
+@endsection

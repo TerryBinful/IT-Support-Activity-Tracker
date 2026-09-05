@@ -1,1 +1,41 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create account</title>@vite(['resources/css/app.css','resources/js/app.js'])</head><body class="grid min-h-screen place-items-center bg-slate-50 p-6"><div class="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm"><h1 class="text-2xl font-bold">Create your account</h1><p class="mb-6 mt-1 text-sm text-slate-500">Your activities are private to your account.</p><form method="POST" action="{{ route('register.store') }}" class="space-y-4">@csrf<div><label class="label">Name</label><input class="input" name="name" required></div><div><label class="label">Email</label><input class="input" name="email" type="email" required></div><div><label class="label">Password</label><input class="input" name="password" type="password" required></div><div><label class="label">Confirm password</label><input class="input" name="password_confirmation" type="password" required></div><button class="btn w-full">Create account</button></form><p class="mt-5 text-sm">Already registered? <a class="font-semibold" href="{{ route('login') }}">Sign in</a></p></div></body></html>
+@extends('layouts.app')
+
+@section('content')
+    <div class="mx-auto max-w-md">
+        <div class="mb-6 text-center">
+            <h1 class="text-3xl font-bold">Create account</h1>
+            <p class="mt-1 text-sm text-slate-500">Start tracking your IT support activities.</p>
+        </div>
+
+        <form method="POST" action="{{ route('register.store') }}" class="rounded-xl border bg-white p-6">
+            @csrf
+
+            <div class="mb-4">
+                <label for="name" class="label">Name</label>
+                <input id="name" name="name" type="text" value="{{ old('name') }}" required autofocus class="input">
+            </div>
+
+            <div class="mb-4">
+                <label for="email" class="label">Email</label>
+                <input id="email" name="email" type="email" value="{{ old('email') }}" required class="input">
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="label">Password</label>
+                <input id="password" name="password" type="password" required class="input">
+            </div>
+
+            <div class="mb-6">
+                <label for="password_confirmation" class="label">Confirm password</label>
+                <input id="password_confirmation" name="password_confirmation" type="password" required class="input">
+            </div>
+
+            <button type="submit" class="btn w-full">Create account</button>
+        </form>
+
+        <p class="mt-4 text-center text-sm text-slate-500">
+            Already registered?
+            <a href="{{ route('login') }}" class="font-semibold text-slate-900 underline">Sign in</a>
+        </p>
+    </div>
+@endsection
