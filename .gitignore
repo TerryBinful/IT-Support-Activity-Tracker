@@ -29,3 +29,4 @@ Thumbs.db
 # Docker local state
 *.log
 ./IT_ACTIVITY_TRACKER_CURSOR_WORK_PLAN.md
+*.md
