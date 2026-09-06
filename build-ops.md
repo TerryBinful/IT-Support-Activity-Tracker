@@ -139,3 +139,20 @@ Exclusions:
 - Default development credentials remain placeholders and must be replaced for non-local deployments.
 
 Validation: `docker compose config` rendered the expected values, Docker created `it-activity-tracker-network`, and the running app received the configured database host and credentials.
+
+### 2026-09-06: Attachment upload interface
+
+Status: implemented; validation passed; commit pending push.
+
+Additions:
+
+- Replaced the plain file input on the activity detail page with a visible evidence upload area.
+- Added clear supported-file guidance and the 10 MB per-file limit.
+- Added multiple-file selection feedback showing the filenames before upload.
+- Preserved the existing private storage, validation, authorization, download, deletion, and history behavior.
+
+Exclusions:
+
+- Drag-and-drop file handling, inline previews, thumbnails, and virus scanning remain future enhancements.
+
+Validation: Running the focused Docker test suite passed 7 tests (18 assertions), and the attachment view passed `git diff --check`.

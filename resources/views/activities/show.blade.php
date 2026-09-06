@@ -91,10 +91,17 @@
                         <li class="text-sm text-slate-500">No files attached.</li>
                     @endforelse
                 </ul>
-                <form method="POST" action="{{ route('activities.attachments.store', $activity) }}" enctype="multipart/form-data" class="mt-4">
+                <form method="POST" action="{{ route('activities.attachments.store', $activity) }}" enctype="multipart/form-data" class="mt-4" data-evidence-form>
                     @csrf
-                    <input type="file" name="attachments[]" multiple class="input">
-                    <button type="submit" class="btn mt-3">Upload evidence</button>
+                    <label for="evidence-files" class="group block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-slate-500 hover:bg-white focus-within:border-slate-500 focus-within:ring-2 focus-within:ring-slate-200">
+                        <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl shadow-sm" aria-hidden="true">+</span>
+                        <span class="mt-3 block font-semibold text-slate-900">Add evidence files</span>
+                        <span class="mt-1 block text-sm text-slate-500">Choose screenshots, documents, exports, or diagnostic files</span>
+                        <span class="mt-2 block text-xs text-slate-400">Multiple files allowed · 10 MB maximum per file</span>
+                        <input id="evidence-files" type="file" name="attachments[]" multiple class="sr-only" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx" data-evidence-input>
+                    </label>
+                    <div class="mt-3 hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700" data-evidence-selection aria-live="polite"></div>
+                    <button type="submit" class="btn mt-3" data-evidence-submit>Upload evidence</button>
                 </form>
             </section>
 
@@ -132,4 +139,27 @@
             @endif
         </aside>
     </div>
+
+    <script>
+        (() => {
+            const form = document.querySelector('[data-evidence-form]');
+            const input = document.querySelector('[data-evidence-input]');
+            const selection = document.querySelector('[data-evidence-selection]');
+
+            if (!form || !input || !selection) return;
+
+            input.addEventListener('change', () => {
+                const files = Array.from(input.files || []);
+
+                if (files.length === 0) {
+                    selection.classList.add('hidden');
+                    selection.textContent = '';
+                    return;
+                }
+
+                selection.classList.remove('hidden');
+                selection.textContent = `${files.length} file${files.length === 1 ? '' : 's'} selected: ${files.map((file) => file.name).join(', ')}`;
+            });
+        })();
+    </script>
 @endsection
