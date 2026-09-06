@@ -19,6 +19,7 @@ class QuickLogActivity
             'activity_date' => $data['activity_date'] ?? now()->toDateString(),
             'priority' => $data['priority'] ?? 'medium',
             'status' => $data['status'] ?? 'completed',
+            'quick_log_key' => $data['quick_log_key'] ?? null,
         ]);
     }
 }

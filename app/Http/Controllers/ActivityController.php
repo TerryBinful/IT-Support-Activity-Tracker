@@ -110,11 +110,12 @@ class ActivityController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'category_id' => 'nullable|exists:categories,id',
+            'quick_log_key' => 'required|uuid',
         ]);
 
-        $this->quickLogActivity->handle($request->user(), $data);
+        $activity = $this->quickLogActivity->handle($request->user(), $data);
 
-        return redirect()->back()->with('success', 'Activity saved.');
+        return redirect()->route('activities.show', $activity)->with('success', 'Activity saved.');
     }
 
     public function show(Request $request, Activity $activity)

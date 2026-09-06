@@ -58,3 +58,25 @@ Status: reviewed; implementation pending.
 Validation: Docker services are running. The current test run is blocked by `Class "Mockery" not found` in the test environment, and the stock `ExampleTest` expects unauthenticated `/` to return `200` even though the application redirects to login.
 
 Next build: lifecycle hardening and focused authorization tests.
+
+### 2026-09-05: Activity lifecycle hardening
+
+Status: implemented and pushed.
+
+Additions:
+
+- Added a per-user UUID key to Quick Log submissions and a unique database constraint so repeated form submissions return the original activity.
+- Added server-side rejection for completing cancelled tasks.
+- Added focused tests for duplicate Quick Log submissions and invalid completion state.
+- Added the missing `notifications` migration used by the existing dashboard and notification centre.
+- Added the missing `mockery/mockery` development dependency required by the Laravel test harness.
+
+Exclusions:
+
+- Full status-state validation for direct activity edits remains in the next hardening pass.
+- Cross-resource authorization coverage for templates, recurring activities, report presets, and attachments remains queued.
+- The generated Laravel `ExampleTest` remains unchanged; it expects unauthenticated `/` to return `200`, while this application correctly redirects guests to login.
+
+Validation: Docker rebuild completed, the focused activity workflow suite passed 6 tests (15 assertions), and the full suite passed 7 tests (17 assertions) with only the generated `ExampleTest` failure described above.
+
+Commit: pending push for this build.

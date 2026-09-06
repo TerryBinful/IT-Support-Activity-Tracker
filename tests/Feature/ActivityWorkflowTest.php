@@ -27,6 +27,19 @@ it('creates a quick log activity for the authenticated user', function () {
         ->and($activity->status)->toBe('completed');
 });
 
+it('returns the existing activity for a repeated quick log submission', function () {
+    $data = [
+        'title' => 'Reset password for HR user',
+        'quick_log_key' => (string) \Illuminate\Support\Str::uuid(),
+    ];
+
+    $first = app(QuickLogActivity::class)->handle($this->user, $data);
+    $second = app(QuickLogActivity::class)->handle($this->user, $data);
+
+    expect($second->id)->toBe($first->id)
+        ->and(Activity::forUser($this->user)->count())->toBe(1);
+});
+
 it('starts and completes a task with server-side duration', function () {
     $activity = app(CreateActivity::class)->handle($this->user, [
         'title' => 'Network troubleshooting',
@@ -47,6 +60,18 @@ it('starts and completes a task with server-side duration', function () {
     expect($activity->status)->toBe('completed')
         ->and($activity->completed_at)->not->toBeNull()
         ->and($activity->duration_minutes)->toBeInt();
+});
+
+it('does not complete a cancelled task', function () {
+    $activity = app(CreateActivity::class)->handle($this->user, [
+        'title' => 'Cancelled task',
+        'activity_date' => now()->toDateString(),
+        'priority' => 'medium',
+        'status' => 'cancelled',
+    ]);
+
+    expect(fn () => app(CompleteActivity::class)->handle($activity, $this->user))
+        ->toThrow(\InvalidArgumentException::class, 'Cancelled tasks cannot be completed.');
 });
 
 it('prevents users from viewing another users activity', function () {

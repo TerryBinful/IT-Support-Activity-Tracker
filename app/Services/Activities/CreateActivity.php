@@ -16,12 +16,20 @@ class CreateActivity
         $data = $this->applyFollowUpDefaults($data);
         $this->calculateDuration($data);
 
-        $activity = Activity::create(Arr::only($data, (new Activity)->getFillable()));
+        $attributes = Arr::only($data, (new Activity)->getFillable());
+        $activity = isset($attributes['quick_log_key'])
+            ? Activity::firstOrCreate(
+                ['user_id' => $user->id, 'quick_log_key' => $attributes['quick_log_key']],
+                $attributes,
+            )
+            : Activity::create($attributes);
 
-        $this->history->record($activity, $user, 'created', null, [
-            'title' => $activity->title,
-            'status' => $activity->status,
-        ]);
+        if ($activity->wasRecentlyCreated) {
+            $this->history->record($activity, $user, 'created', null, [
+                'title' => $activity->title,
+                'status' => $activity->status,
+            ]);
+        }
 
         return $activity;
     }

@@ -4,6 +4,7 @@
 
     <form method="POST" action="{{ route('activities.quick') }}" class="mt-4 space-y-4">
         @csrf
+        <input type="hidden" name="quick_log_key" value="{{ old('quick_log_key', (string) \Illuminate\Support\Str::uuid()) }}">
         <div>
             <label for="quick_title" class="label">What did you do?</label>
             <input id="quick_title" name="title" type="text" required autofocus class="input" placeholder="Resolved Outlook issue for Finance user">

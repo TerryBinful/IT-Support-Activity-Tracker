@@ -16,6 +16,10 @@ class CompleteActivity
             throw new InvalidArgumentException('This task is already completed.');
         }
 
+        if ($activity->status === 'cancelled') {
+            throw new InvalidArgumentException('Cancelled tasks cannot be completed.');
+        }
+
         $old = [
             'status' => $activity->status,
             'completed_at' => $activity->completed_at?->toIso8601String(),

@@ -14,7 +14,7 @@ class Activity extends Model
         'priority', 'status', 'activity_date', 'started_at', 'completed_at', 'duration_minutes',
         'outcome', 'blockers', 'follow_up_required', 'follow_up_action',
         'follow_up_due_at', 'follow_up_status', 'follow_up_completed_at',
-        'reference_number', 'evidence_url',
+        'reference_number', 'evidence_url', 'quick_log_key',
     ];
 
     protected function casts(): array
