@@ -99,3 +99,24 @@ Exclusions:
 - Per-user timezone configuration is not introduced; scheduling continues to use the application timezone.
 
 Validation: Docker image rebuild completed. Focused workflow and recurring tests passed 7 tests (18 assertions). Full-suite status remains 7 passed and the generated unauthenticated `ExampleTest` failure recorded above.
+
+Commit: `5d11fe9` (`feat: harden recurring activity generation`), pushed to `origin/main`.
+
+### 2026-09-05: Report preset lifecycle
+
+Status: implemented; focused validation passed; commit pending push.
+
+Additions:
+
+- Added user-scoped report preset rename, duplicate, delete, and default-selection actions.
+- Added preset loading by authenticated user ownership rather than trusting a submitted record id.
+- Added report preset actions to the saved-layout UI.
+- Preserved the existing report/export implementation while wiring the missing preset lifecycle.
+
+Exclusions:
+
+- Preview and export filter synchronization remains for the next report-engine build.
+- Drag-and-drop ordering remains the existing accessible arrow-based ordering control.
+- No cross-user preset access is permitted.
+
+Validation: Rebuilt Docker image, confirmed all seven report routes are registered, and passed the focused suite with 7 tests (18 assertions).

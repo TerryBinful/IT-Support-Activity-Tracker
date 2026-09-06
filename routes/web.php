@@ -45,6 +45,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/preferences', [ReportController::class, 'savePreference'])->name('reports.preferences');
+    Route::patch('/reports/preferences/{preference}', [ReportController::class, 'updatePreference'])->name('reports.preferences.update');
+    Route::post('/reports/preferences/{preference}/duplicate', [ReportController::class, 'duplicatePreference'])->name('reports.preferences.duplicate');
+    Route::post('/reports/preferences/{preference}/default', [ReportController::class, 'setDefaultPreference'])->name('reports.preferences.default');
+    Route::delete('/reports/preferences/{preference}', [ReportController::class, 'destroyPreference'])->name('reports.preferences.destroy');
     Route::get('/reports/export/{format}', [ReportController::class, 'export'])->name('reports.export');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

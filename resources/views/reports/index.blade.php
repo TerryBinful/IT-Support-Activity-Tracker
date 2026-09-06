@@ -124,7 +124,14 @@
                                         · Default
                                     @endif
                                 </div>
-                                <a href="{{ route('reports.index', ['columns' => implode(',', $preference->columns), 'order_json' => json_encode($preference->column_order)]) }}" class="mt-1 inline-block font-semibold underline">Load layout</a>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <a href="{{ route('reports.index', ['preset' => $preference->id]) }}" class="font-semibold underline">Load layout</a>
+                                    <form method="POST" action="{{ route('reports.preferences.duplicate', $preference) }}">@csrf<button class="font-semibold underline" type="submit">Duplicate</button></form>
+                                    @if (! $preference->is_default)
+                                        <form method="POST" action="{{ route('reports.preferences.default', $preference) }}">@csrf<button class="font-semibold underline" type="submit">Set default</button></form>
+                                    @endif
+                                    <form method="POST" action="{{ route('reports.preferences.destroy', $preference) }}" onsubmit="return confirm('Delete this report preset?')">@csrf @method('DELETE')<button class="font-semibold text-red-700 underline" type="submit">Delete</button></form>
+                                </div>
                             </li>
                         @endforeach
                     </ul>

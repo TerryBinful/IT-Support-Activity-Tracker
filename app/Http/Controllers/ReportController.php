@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\ActivitiesExport;
 use App\Exports\PdfActivitiesExport;
+use App\Models\ReportPreference;
 use App\Services\Reports\ReportColumnRegistry;
 use App\Services\Reports\ReportQueryBuilder;
 use Illuminate\Http\Request;
@@ -19,7 +20,10 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $labels = $this->columns->labels();
-        $default = $request->user()->reportPreferences()->where('is_default', true)->first();
+        $preset = $request->filled('preset')
+            ? $request->user()->reportPreferences()->findOrFail($request->integer('preset'))
+            : null;
+        $default = $preset ?? $request->user()->reportPreferences()->where('is_default', true)->first();
         $from = $request->input('from', now()->startOfMonth()->toDateString());
         $to = $request->input('to', now()->endOfMonth()->toDateString());
 
@@ -43,12 +47,12 @@ class ReportController extends Controller
             'summary' => $summary,
             'preview' => $preview,
             'savedPreferences' => $savedPreferences,
+            'activePreference' => $preset,
         ]);
     }
 
     public function savePreference(Request $request)
     {
-        $labels = $this->columns->labels();
         $d = $request->validate([
             'name' => 'required|string|max:100',
             'columns' => 'required|array',
@@ -68,11 +72,49 @@ class ReportController extends Controller
             'name' => $d['name'],
             'columns' => $c,
             'column_order' => $o,
+            'filters' => $request->only(['status', 'priority', 'category_id']),
             'date_range_mode' => $d['date_range_mode'] ?? null,
             'is_default' => $request->boolean('is_default'),
         ]);
 
         return back()->with('success', 'Report preset saved.');
+    }
+
+    public function updatePreference(Request $request, ReportPreference $preference)
+    {
+        $this->authorizePreference($request, $preference);
+        $data = $request->validate(['name' => 'required|string|max:100']);
+        $preference->update($data);
+
+        return back()->with('success', 'Report preset renamed.');
+    }
+
+    public function duplicatePreference(Request $request, ReportPreference $preference)
+    {
+        $this->authorizePreference($request, $preference);
+        $copy = $preference->replicate(['is_default']);
+        $copy->name = $preference->name.' (Copy)';
+        $copy->is_default = false;
+        $request->user()->reportPreferences()->save($copy);
+
+        return back()->with('success', 'Report preset duplicated.');
+    }
+
+    public function setDefaultPreference(Request $request, ReportPreference $preference)
+    {
+        $this->authorizePreference($request, $preference);
+        $request->user()->reportPreferences()->update(['is_default' => false]);
+        $preference->update(['is_default' => true]);
+
+        return back()->with('success', 'Default report preset updated.');
+    }
+
+    public function destroyPreference(Request $request, ReportPreference $preference)
+    {
+        $this->authorizePreference($request, $preference);
+        $preference->delete();
+
+        return back()->with('success', 'Report preset deleted.');
     }
 
     public function export(Request $request, string $format)
@@ -116,5 +158,10 @@ class ReportController extends Controller
         }
 
         return [];
+    }
+
+    private function authorizePreference(Request $request, ReportPreference $preference): void
+    {
+        abort_unless($preference->user_id === $request->user()->id, 403);
     }
 }
