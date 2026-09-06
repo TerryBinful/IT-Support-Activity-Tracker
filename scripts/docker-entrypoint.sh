@@ -16,18 +16,18 @@ if ! grep -q '^APP_KEY=base64:' /var/www/config/.env 2>/dev/null; then
   php artisan key:generate --force
 fi
 
-# Ensure the database is ready, then migrate/seed. These operations are idempotent.
+# Ensure the database is ready, then migrate/seed. The command takes a PostgreSQL
+# advisory lock so app, worker, and scheduler startup cannot prepare concurrently.
 i=0
-until php artisan migrate --force >/tmp/migrate.log 2>&1; do
+until php artisan app:prepare >/tmp/prepare.log 2>&1; do
   i=$((i + 1))
   if [ "$i" -ge 30 ]; then
-    cat /tmp/migrate.log
+    cat /tmp/prepare.log
     exit 1
   fi
   echo "Waiting for PostgreSQL... attempt $i/30"
   sleep 2
 done
-php artisan db:seed --force
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear

@@ -156,3 +156,20 @@ Exclusions:
 - Drag-and-drop file handling, inline previews, thumbnails, and virus scanning remain future enhancements.
 
 Validation: Running the focused Docker test suite passed 7 tests (18 assertions), and the attachment view passed `git diff --check`.
+
+### 2026-09-06: PostgreSQL migration startup race
+
+Status: implemented; validation pending.
+
+Problem found: the app, worker, and scheduler all execute the migration step from the shared Docker entrypoint. They can start together and race to create the same table, producing `relation "recurring_activities" already exists`.
+
+Addition:
+
+- Added a shared application preparation command that wraps migrations and seeding in a PostgreSQL advisory lock.
+- Updated the Docker entrypoint so all services use the locked preparation step while retaining retry behavior for database startup.
+
+Exclusion:
+
+- No database volume or existing application data is deleted. The fix addresses startup concurrency only.
+
+Validation: The updated Docker image built successfully and editor diagnostics report no PHP errors in the preparation command. The final container recreation command was issued without volume deletion, but the terminal stopped returning Docker output before the post-restart migration/test result could be captured.
