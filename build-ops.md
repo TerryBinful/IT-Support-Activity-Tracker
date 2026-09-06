@@ -79,4 +79,23 @@ Exclusions:
 
 Validation: Docker rebuild completed, the focused activity workflow suite passed 6 tests (15 assertions), and the full suite passed 7 tests (17 assertions) with only the generated `ExampleTest` failure described above.
 
-Commit: pending push for this build.
+Commit: `22c06af` (`feat: harden activity lifecycle`), pushed to `origin/main`.
+
+### 2026-09-05: Recurring activity correctness
+
+Status: implemented; focused validation passed; commit pending push.
+
+Additions:
+
+- Added weekly and monthly recurrence-day input, validation, and day-aware next-run calculation.
+- Added initial scheduling that selects the next configured recurrence day instead of always running immediately.
+- Made recurring activity creation idempotent for a recurring rule and activity date.
+- Added a database uniqueness constraint for recurring generated activities.
+- Added a regression test proving repeated scheduler runs do not create duplicate weekly activities.
+
+Exclusions:
+
+- Recurrence rules remain limited to daily, weekly, and monthly schedules; no cron-style expressions were added.
+- Per-user timezone configuration is not introduced; scheduling continues to use the application timezone.
+
+Validation: Docker image rebuild completed. Focused workflow and recurring tests passed 7 tests (18 assertions). Full-suite status remains 7 passed and the generated unauthenticated `ExampleTest` failure recorded above.

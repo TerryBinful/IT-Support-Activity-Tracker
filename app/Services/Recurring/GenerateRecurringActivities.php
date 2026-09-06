@@ -69,9 +69,30 @@ class GenerateRecurringActivities
     {
         return match ($recurring->recurrence_type) {
             'daily' => $from->copy()->addDay()->startOfDay(),
-            'weekly' => $from->copy()->addWeek()->startOfDay(),
-            'monthly' => $from->copy()->addMonth()->startOfDay(),
+            'weekly' => $from->copy()->startOfDay()->next($recurring->recurrence_day ?? Carbon::MONDAY),
+            'monthly' => $from->copy()->addMonthNoOverflow()->startOfMonth()
+                ->addDays(min(($recurring->recurrence_day ?? 1) - 1, $from->copy()->addMonthNoOverflow()->daysInMonth - 1)),
             default => $from->copy()->addDay()->startOfDay(),
         };
+    }
+
+    public function initialRunAt(string $type, ?int $day, Carbon $from): Carbon
+    {
+        if ($type === 'daily') {
+            return $from->copy()->startOfDay();
+        }
+
+        if ($type === 'weekly') {
+            $candidate = $from->copy()->startOfDay();
+
+            return $candidate->dayOfWeek === ($day ?? Carbon::MONDAY)
+                ? $candidate
+                : $candidate->next($day ?? Carbon::MONDAY);
+        }
+
+        $month = $from->copy()->startOfMonth();
+        $targetDay = min($day ?? 1, $month->daysInMonth);
+
+        return $month->addDays($targetDay - 1)->startOfDay();
     }
 }

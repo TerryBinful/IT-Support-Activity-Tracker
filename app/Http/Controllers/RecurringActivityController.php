@@ -27,7 +27,7 @@ class RecurringActivityController extends Controller
     {
         $data = $this->validated($request);
         $data['user_id'] = $request->user()->id;
-        $data['next_run_at'] = now()->startOfDay();
+        $data['next_run_at'] = $generator->initialRunAt($data['recurrence_type'], $data['recurrence_day'] ?? null, now());
 
         RecurringActivity::create($data);
 
@@ -45,7 +45,10 @@ class RecurringActivityController extends Controller
     public function update(Request $request, RecurringActivity $recurring)
     {
         abort_unless($recurring->user_id === $request->user()->id, 403);
-        $recurring->update($this->validated($request));
+        $data = $this->validated($request);
+        $data['next_run_at'] = app(GenerateRecurringActivities::class)
+            ->initialRunAt($data['recurrence_type'], $data['recurrence_day'] ?? null, now());
+        $recurring->update($data);
 
         return redirect()->route('recurring.index')->with('success', 'Recurring activity updated.');
     }
@@ -74,6 +77,7 @@ class RecurringActivityController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'priority' => 'required|in:low,medium,high,critical',
             'recurrence_type' => 'required|in:daily,weekly,monthly',
+            'recurrence_day' => 'nullable|integer|min:0|max:31',
             'is_active' => 'nullable|boolean',
         ]) + [
             'is_active' => $request->boolean('is_active', true),

@@ -2,11 +2,14 @@
 
 use App\Models\Activity;
 use App\Models\Category;
+use App\Models\RecurringActivity;
 use App\Models\User;
 use App\Services\Activities\CompleteActivity;
 use App\Services\Activities\CreateActivity;
 use App\Services\Activities\QuickLogActivity;
 use App\Services\Activities\StartActivity;
+use App\Services\Recurring\GenerateRecurringActivities;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -72,6 +75,26 @@ it('does not complete a cancelled task', function () {
 
     expect(fn () => app(CompleteActivity::class)->handle($activity, $this->user))
         ->toThrow(\InvalidArgumentException::class, 'Cancelled tasks cannot be completed.');
+});
+
+it('generates a weekly recurring activity only once for its run date', function () {
+    $recurring = RecurringActivity::create([
+        'user_id' => $this->user->id,
+        'title' => 'Weekly backup verification',
+        'priority' => 'medium',
+        'recurrence_type' => 'weekly',
+        'recurrence_day' => Carbon::MONDAY,
+        'next_run_at' => Carbon::parse('2026-09-07 00:00:00'),
+        'is_active' => true,
+    ]);
+
+    $generator = app(GenerateRecurringActivities::class);
+    $first = $generator->handle(Carbon::parse('2026-09-07 08:00:00'));
+    $second = $generator->handle(Carbon::parse('2026-09-07 09:00:00'));
+
+    expect($first)->toBe(1)
+        ->and($second)->toBe(0)
+        ->and($recurring->activities()->count())->toBe(1);
 });
 
 it('prevents users from viewing another users activity', function () {

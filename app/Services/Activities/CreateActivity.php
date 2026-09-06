@@ -17,12 +17,23 @@ class CreateActivity
         $this->calculateDuration($data);
 
         $attributes = Arr::only($data, (new Activity)->getFillable());
-        $activity = isset($attributes['quick_log_key'])
-            ? Activity::firstOrCreate(
+        if (isset($attributes['quick_log_key'])) {
+            $activity = Activity::firstOrCreate(
                 ['user_id' => $user->id, 'quick_log_key' => $attributes['quick_log_key']],
                 $attributes,
-            )
-            : Activity::create($attributes);
+            );
+        } elseif (isset($attributes['recurring_activity_id'])) {
+            $activity = Activity::firstOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'recurring_activity_id' => $attributes['recurring_activity_id'],
+                    'activity_date' => $attributes['activity_date'],
+                ],
+                $attributes,
+            );
+        } else {
+            $activity = Activity::create($attributes);
+        }
 
         if ($activity->wasRecentlyCreated) {
             $this->history->record($activity, $user, 'created', null, [
