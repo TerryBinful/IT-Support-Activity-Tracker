@@ -213,3 +213,17 @@ Confirmed:
 - `docker compose down -v` remains the intentional destructive operation and is documented as such.
 
 Operational guidance added to `README.md`: keep the Compose project name stable and use `docker compose up -d` for ordinary restarts. Use `--build` only when application or image dependencies changed.
+
+### 2026-09-06: Export interface compatibility
+
+Status: implemented; validation passed; commit pending push.
+
+Problem found: Laravel Excel 4 requires `ActivitiesExport::collection()` to declare an `Illuminate\Support\Enumerable` return type. The missing declaration caused PHP to reject the export class, which made Excel, CSV, and PDF export requests fail before format handling.
+
+Additions:
+
+- Added the required collection return type to the shared activity export.
+- Added regression coverage for XLSX, CSV, and PDF export requests.
+- Made the focused test category setup idempotent when running against persistent PostgreSQL data.
+
+Validation: All supported export formats passed in the focused suite: 9 tests (22 assertions).

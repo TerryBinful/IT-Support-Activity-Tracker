@@ -17,7 +17,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
-    Category::create(['name' => 'User Support', 'sort_order' => 0]);
+    Category::firstOrCreate(['name' => 'User Support'], ['sort_order' => 0]);
 });
 
 it('creates a quick log activity for the authenticated user', function () {
@@ -132,4 +132,19 @@ it('shows the report review page for the authenticated user', function () {
     $this->get(route('reports.index'))
         ->assertOk()
         ->assertSee('Reports');
+});
+
+it('exports reports in every supported format', function () {
+    Activity::create([
+        'user_id' => $this->user->id,
+        'title' => 'Exportable activity',
+        'activity_date' => now()->toDateString(),
+        'priority' => 'medium',
+        'status' => 'completed',
+    ]);
+
+    foreach (['xlsx', 'csv', 'pdf'] as $format) {
+        $this->get(route('reports.export', ['format' => $format]))
+            ->assertSuccessful();
+    }
 });
