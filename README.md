@@ -42,6 +42,24 @@ On first startup, Laravel creates and persists its `APP_KEY` in a Docker volume,
 
 `docker compose down` keeps your data. `docker compose down -v` deletes the Docker volumes and therefore deletes application data and the generated key.
 
+### Safe rebuilds
+
+Use these commands for normal updates:
+
+```bash
+docker compose up -d
+```
+
+Use `--build` only when application or image dependencies changed:
+
+```bash
+docker compose up -d --build
+```
+
+Both commands preserve PostgreSQL data because the database is stored in the named `postgres_data` volume. Docker may recreate the application, worker, or scheduler containers, but it does not recreate the database volume. Do not run `docker compose down -v` unless you intentionally want to erase the local database, uploaded evidence, and generated Laravel configuration.
+
+Keep the same Compose project name between runs. Changing `COMPOSE_PROJECT_NAME` creates a different set of volume names, which can make an existing database appear to have disappeared even though it is still stored in the original Docker volume.
+
 ## Scheduled reports
 
 The scheduler runs every Friday at 08:00 using the application's configured timezone (`Africa/Accra`). It creates an in-app monthly-report reminder only when that Friday is the final Friday of the month.

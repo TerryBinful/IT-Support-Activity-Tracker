@@ -199,3 +199,17 @@ Additions:
 - Added a regression test for opening the authenticated user's report review page.
 
 Validation: Focused activity and report tests passed 8 tests (20 assertions).
+
+### 2026-09-06: Persistent database operations review
+
+Status: reviewed; no schema or volume reset required.
+
+Confirmed:
+
+- PostgreSQL uses the named `postgres_data` volume.
+- Uploaded evidence uses the persistent `laravel_storage` volume.
+- Laravel runtime configuration and `APP_KEY` use the persistent `laravel_config` volume.
+- `docker compose up -d --build` can recreate application images and containers without deleting database data.
+- `docker compose down -v` remains the intentional destructive operation and is documented as such.
+
+Operational guidance added to `README.md`: keep the Compose project name stable and use `docker compose up -d` for ordinary restarts. Use `--build` only when application or image dependencies changed.
