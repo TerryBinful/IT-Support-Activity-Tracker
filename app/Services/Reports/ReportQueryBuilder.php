@@ -3,11 +3,11 @@
 namespace App\Services\Reports;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ReportQueryBuilder
 {
-    public function forUser(User $user, string $from, string $to, array $filters = []): Builder
+    public function forUser(User $user, string $from, string $to, array $filters = []): HasMany
     {
         $query = $user->activities()
             ->with('category')

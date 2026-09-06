@@ -186,3 +186,16 @@ Additions:
 - Added a regression test confirming an authenticated user can open an activity they own.
 
 Validation: Focused activity workflow tests passed 7 tests (18 assertions), including the owned-activity detail request.
+
+### 2026-09-06: Report query return type
+
+Status: implemented; validation passed; commit pending push.
+
+Problem found: the reports page failed because `ReportQueryBuilder::forUser()` declared an `Eloquent\Builder` return type while the authenticated user's activity relationship correctly returned `HasMany`.
+
+Additions:
+
+- Updated the report query contract to match Laravel's user activity relationship.
+- Added a regression test for opening the authenticated user's report review page.
+
+Validation: Focused activity and report tests passed 8 tests (20 assertions).

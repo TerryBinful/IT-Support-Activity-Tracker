@@ -127,3 +127,9 @@ it('shows an activity owned by the authenticated user', function () {
 it('shows the quick log form on the dashboard', function () {
     $this->get(route('dashboard'))->assertOk()->assertSee('Quick Log');
 });
+
+it('shows the report review page for the authenticated user', function () {
+    $this->get(route('reports.index'))
+        ->assertOk()
+        ->assertSee('Reports');
+});
