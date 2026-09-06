@@ -173,3 +173,16 @@ Exclusion:
 - No database volume or existing application data is deleted. The fix addresses startup concurrency only.
 
 Validation: The updated Docker image built successfully and editor diagnostics report no PHP errors in the preparation command. The final container recreation command was issued without volume deletion, but the terminal stopped returning Docker output before the post-restart migration/test result could be captured.
+
+### 2026-09-06: Controller authorization helper
+
+Status: implemented; validation passed; commit pending push.
+
+Problem found: activity creation succeeded, but redirecting to the activity detail page failed because controllers called `$this->authorize(...)` while the shared base controller did not include Laravel's authorization support.
+
+Additions:
+
+- Restored the framework authorization helper on the shared controller base.
+- Added a regression test confirming an authenticated user can open an activity they own.
+
+Validation: Focused activity workflow tests passed 7 tests (18 assertions), including the owned-activity detail request.

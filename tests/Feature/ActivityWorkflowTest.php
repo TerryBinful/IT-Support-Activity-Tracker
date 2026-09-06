@@ -110,6 +110,20 @@ it('prevents users from viewing another users activity', function () {
     $this->get(route('activities.show', $activity))->assertNotFound();
 });
 
+it('shows an activity owned by the authenticated user', function () {
+    $activity = Activity::create([
+        'user_id' => $this->user->id,
+        'title' => 'Review diagnostic output',
+        'activity_date' => now()->toDateString(),
+        'priority' => 'medium',
+        'status' => 'on_hold',
+    ]);
+
+    $this->get(route('activities.show', $activity))
+        ->assertOk()
+        ->assertSee('Review diagnostic output');
+});
+
 it('shows the quick log form on the dashboard', function () {
     $this->get(route('dashboard'))->assertOk()->assertSee('Quick Log');
 });
