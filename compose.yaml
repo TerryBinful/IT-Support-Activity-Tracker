@@ -5,10 +5,30 @@ x-app-image: &app-image
   image: it-activity-tracker-app:latest
   pull_policy: never
 
+x-app-environment: &app-environment
+  APP_NAME: ${APP_NAME:-IT Activity Tracker}
+  APP_ENV: ${APP_ENV:-local}
+  APP_DEBUG: ${APP_DEBUG:-true}
+  APP_URL: ${APP_URL:-http://localhost:8080}
+  APP_TIMEZONE: ${APP_TIMEZONE:-Africa/Accra}
+  DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+  DB_HOST: ${DB_HOST:-postgres}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_DATABASE: ${DB_DATABASE:-it_activity}
+  DB_USERNAME: ${DB_USERNAME:-it_activity}
+  DB_PASSWORD: ${DB_PASSWORD:-it_activity_change_me}
+  SESSION_DRIVER: ${SESSION_DRIVER:-database}
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-log}
+  FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
+  QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+  CACHE_STORE: ${CACHE_STORE:-database}
+
 services:
   app:
     <<: *app-image
     container_name: it-activity-tracker-app
+    environment: *app-environment
     ports:
       - "8080:80"
     volumes:
@@ -22,6 +42,7 @@ services:
   scheduler:
     <<: *app-image
     container_name: it-activity-tracker-scheduler
+    environment: *app-environment
     command: ["php", "artisan", "schedule:work"]
     volumes:
       - laravel_storage:/var/www/html/storage
@@ -36,6 +57,7 @@ services:
   worker:
     <<: *app-image
     container_name: it-activity-tracker-worker
+    environment: *app-environment
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3"]
     volumes:
       - laravel_storage:/var/www/html/storage
@@ -63,6 +85,10 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
+
+networks:
+  default:
+    name: ${DOCKER_NETWORK_NAME:-it-activity-tracker-network}
 
 volumes:
   postgres_data:

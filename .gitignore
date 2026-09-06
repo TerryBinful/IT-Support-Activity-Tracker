@@ -1,4 +1,7 @@
 # Laravel environment / secrets
+.env
+.env.*
+!.env.example
 src/.env
 src/.env.*
 !src/.env.example

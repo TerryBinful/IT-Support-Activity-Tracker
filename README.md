@@ -18,6 +18,14 @@ docker compose up -d --build
 
 Open **http://localhost:8080**.
 
+The repository includes `.env.example` with the Docker service connection defaults. To customize the database name, username, password, host port, or Docker network, copy it to `.env` before starting Compose:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell, use `Copy-Item .env.example .env`. The root `.env` is ignored by Git. `DB_HOST=postgres` is the internal Compose DNS name and must remain `postgres` unless the PostgreSQL service name changes.
+
 On first startup, Laravel creates and persists its `APP_KEY` in a Docker volume, waits for PostgreSQL, runs migrations and seeds the default IT categories.
 
 ## Main services

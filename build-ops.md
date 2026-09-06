@@ -120,3 +120,22 @@ Exclusions:
 - No cross-user preset access is permitted.
 
 Validation: Rebuilt Docker image, confirmed all seven report routes are registered, and passed the focused suite with 7 tests (18 assertions).
+
+### 2026-09-06: Docker environment wiring
+
+Status: implemented; validation passed; commit pending push.
+
+Additions:
+
+- Added documented root `.env.example` support for Laravel and PostgreSQL connection values.
+- Forwarded database, application, queue, cache, filesystem, and session settings into every Laravel container.
+- Added a configurable named Docker network through `DOCKER_NETWORK_NAME`.
+- Added setup instructions for copying `.env.example` to a local, Git-ignored `.env`.
+- Corrected root environment ignore rules so local credentials are not committed.
+
+Exclusions:
+
+- The PostgreSQL service remains internal to the Compose network and is not exposed on a host port.
+- Default development credentials remain placeholders and must be replaced for non-local deployments.
+
+Validation: `docker compose config` rendered the expected values, Docker created `it-activity-tracker-network`, and the running app received the configured database host and credentials.
